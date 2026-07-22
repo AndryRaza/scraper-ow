@@ -94,4 +94,53 @@ router.post('/scrape/cancel', (req, res) => {
   res.json({ success: true, message: 'Annulation demandée.' });
 });
 
+/**
+ * GET /api/tweets/list
+ * Récupère les tweets avec pagination et tri.
+ * Query params:
+ *   page    - numéro de page (défaut 1)
+ *   limit   - tweets par page (défaut 20, max 100)
+ *   order   - "asc" ou "desc" (défaut "desc", tri par date)
+ *   account - filtre optionnel par compte
+ */
+router.get('/tweets/list', (req, res) => {
+  var page = parseInt(req.query.page, 10) || 1;
+  var limit = parseInt(req.query.limit, 10) || 20;
+  var order = req.query.order === 'asc' ? 'asc' : 'desc';
+  var account = req.query.account || null;
+
+  if (page < 1) page = 1;
+  if (limit < 1) limit = 20;
+  if (limit > 100) limit = 100;
+
+  try {
+    var tweets = getTweets(account);
+
+    tweets.sort(function (a, b) {
+      var da = new Date(a.date || 0).getTime();
+      var db = new Date(b.date || 0).getTime();
+      return order === 'asc' ? da - db : db - da;
+    });
+
+    var total = tweets.length;
+    var totalPages = Math.ceil(total / limit);
+    var start = (page - 1) * limit;
+    var paged = tweets.slice(start, start + limit);
+
+    res.json({
+      success: true,
+      page: page,
+      limit: limit,
+      total: total,
+      totalPages: totalPages,
+      order: order,
+      account: account,
+      tweets: paged,
+    });
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
