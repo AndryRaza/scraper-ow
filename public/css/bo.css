@@ -85,7 +85,6 @@ tbody td {
 }
 
 .text {
-  max-width: 400px;
   word-break: break-word;
 }
 
@@ -93,11 +92,6 @@ tbody td {
   white-space: nowrap;
   color: #666;
   font-size: 13px;
-}
-
-.rt {
-  text-align: center;
-  font-weight: 600;
 }
 
 .btn-link {
@@ -128,4 +122,73 @@ tbody td {
 
 .btn-danger:hover:not(:disabled) {
   background: #c0392b;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid #c0c5d0;
+  color: #555;
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: #e8ebf0;
+}
+
+.selection-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.sort-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sort-header:hover {
+  color: #2b66d9;
+}
+
+.sort-arrow {
+  flex-shrink: 0;
+}
+
+.sort-arrow.active path {
+  fill: #2b66d9;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 20px;
+  padding: 12px 0;
+}
+
+.page-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-decoration: none;
+  color: #555;
+  transition: background 0.15s;
+}
+
+.page-num:hover {
+  background: #e8ebf0;
+}
+
+.page-num.active {
+  background: #2b66d9;
+  color: #fff;
+  font-weight: 600;
 }

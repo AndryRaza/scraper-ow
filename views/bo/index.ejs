@@ -9,8 +9,12 @@
 <body>
   <header>
     <h1><%= title %></h1>
-    <span class="count"><%= tweets.length %> tweets</span>
-    <button id="deleteBtn" class="btn btn-danger" disabled>Supprimer la sélection</button>
+    <span class="count"><%= tweets.length %> affichés / <%= totalTweets %> total</span>
+    <div class="selection-actions">
+      <button id="selectAllBtn" class="btn btn-outline">Tout s&eacute;lectionner</button>
+      <button id="deselectAllBtn" class="btn btn-outline" disabled>Annuler les s&eacute;lections</button>
+    </div>
+    <button id="deleteBtn" class="btn btn-danger" disabled>Supprimer la s&eacute;lection</button>
   </header>
 
   <main>
@@ -21,18 +25,52 @@
         <table>
           <thead>
             <tr>
-              <th>Compte</th>
+              <th>
+                <a href="?sortBy=account&sortOrder=<%= sortBy === 'account' ? nextOrder : 'asc' %>&page=1&perPage=<%= perPage %>" class="sort-header">
+                  Compte
+                  <% if (sortBy === 'account') { %>
+                    <svg class="sort-arrow active" width="10" height="10" viewBox="0 0 10 10">
+                      <% if (sortOrder === 'asc') { %>
+                        <path d="M5 0L10 8H0z" fill="#2b66d9"/>
+                      <% } else { %>
+                        <path d="M0 2L5 10L10 2z" fill="#2b66d9"/>
+                      <% } %>
+                    </svg>
+                  <% } else { %>
+                    <svg class="sort-arrow" width="10" height="10" viewBox="0 0 10 10">
+                      <path d="M5 0L10 8H0z" fill="#ccc"/>
+                    </svg>
+                  <% } %>
+                </a>
+              </th>
               <th>Texte</th>
-              <th>Date</th>
+              <th>
+                <a href="?sortBy=date&sortOrder=<%= sortBy === 'date' ? nextOrder : 'desc' %>&page=1&perPage=<%= perPage %>" class="sort-header">
+                  Date
+                  <% if (sortBy === 'date') { %>
+                    <svg class="sort-arrow active" width="10" height="10" viewBox="0 0 10 10">
+                      <% if (sortOrder === 'asc') { %>
+                        <path d="M5 0L10 8H0z" fill="#2b66d9"/>
+                      <% } else { %>
+                        <path d="M0 2L5 10L10 2z" fill="#2b66d9"/>
+                      <% } %>
+                    </svg>
+                  <% } else { %>
+                    <svg class="sort-arrow" width="10" height="10" viewBox="0 0 10 10">
+                      <path d="M0 2L5 10L10 2z" fill="#ccc"/>
+                    </svg>
+                  <% } %>
+                </a>
+              </th>
               <th>Liens</th>
-              <th><input type="checkbox" id="selectAll" /></th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             <% tweets.forEach(function(t) { %>
               <tr>
                 <td class="account">@<%= t.account %></td>
-                <td class="text"><%= (t.text || '').substring(0, 120) %><% if (t.text && t.text.length > 120) { %>...<% } %></td>
+                <td class="text"><%= t.text || '' %></td>
                 <td class="date"><%= t.date ? new Date(t.date).toLocaleDateString('fr-FR') : '-' %></td>
                 <td class="links">
                   <% if (t.links && t.links.length > 0) { %>
@@ -47,30 +85,61 @@
           </tbody>
         </table>
       </div>
+
+      <div class="pagination">
+        <% if (currentPage > 1) { %>
+          <a href="?sortBy=<%= sortBy %>&sortOrder=<%= sortOrder %>&page=<%= currentPage - 1 %>&perPage=<%= perPage %>" class="btn btn-outline">Pr&eacute;c&eacute;dent</a>
+        <% } else { %>
+          <span class="btn btn-outline" disabled>Pr&eacute;c&eacute;dent</span>
+        <% } %>
+
+        <% for (var p = 1; p <= totalPages; p++) { %>
+          <% if (p === currentPage) { %>
+            <span class="page-num active"><%= p %></span>
+          <% } else { %>
+            <a href="?sortBy=<%= sortBy %>&sortOrder=<%= sortOrder %>&page=<%= p %>&perPage=<%= perPage %>" class="page-num"><%= p %></a>
+          <% } %>
+        <% } %>
+
+        <% if (currentPage < totalPages) { %>
+          <a href="?sortBy=<%= sortBy %>&sortOrder=<%= sortOrder %>&page=<%= currentPage + 1 %>&perPage=<%= perPage %>" class="btn btn-outline">Suivant</a>
+        <% } else { %>
+          <span class="btn btn-outline" disabled>Suivant</span>
+        <% } %>
+      </div>
     <% } %>
   </main>
 
   <script>
     var checkboxes = document.querySelectorAll('.tweet-check');
-    var selectAll = document.getElementById('selectAll');
+    var selectAllBtn = document.getElementById('selectAllBtn');
+    var deselectAllBtn = document.getElementById('deselectAllBtn');
     var deleteBtn = document.getElementById('deleteBtn');
 
-    function updateDeleteBtn() {
-      var checked = document.querySelectorAll('.tweet-check:checked');
-      deleteBtn.disabled = checked.length === 0;
-      deleteBtn.textContent = 'Supprimer (' + checked.length + ')';
+    function updateButtons() {
+      var total = checkboxes.length;
+      var checked = document.querySelectorAll('.tweet-check:checked').length;
+
+      deleteBtn.disabled = checked === 0;
+      deleteBtn.textContent = 'Supprimer la s\u00e9lection' + (checked > 0 ? ' (' + checked + ')' : '');
+
+      selectAllBtn.disabled = checked === total;
+      deselectAllBtn.disabled = checked === 0;
     }
 
     checkboxes.forEach(function(cb) {
-      cb.addEventListener('change', updateDeleteBtn);
+      cb.addEventListener('change', updateButtons);
     });
 
-    if (selectAll) {
-      selectAll.addEventListener('change', function() {
-        checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
-        updateDeleteBtn();
-      });
-    }
+    selectAllBtn.addEventListener('click', function() {
+      checkboxes.forEach(function(cb) { cb.checked = true; });
+      updateButtons();
+    });
+
+    deselectAllBtn.addEventListener('click', function() {
+      checkboxes.forEach(function(cb) { cb.checked = false; });
+      updateButtons();
+    });
 
     deleteBtn.addEventListener('click', function() {
       var checked = document.querySelectorAll('.tweet-check:checked');
@@ -92,7 +161,7 @@
         }
       })
       .catch(function(err) {
-        alert('Erreur réseau : ' + err.message);
+        alert('Erreur r\u00e9seau : ' + err.message);
       });
     });
   </script>
