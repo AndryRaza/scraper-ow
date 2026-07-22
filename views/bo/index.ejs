@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/bo.css">
+</head>
+<body>
+  <header>
+    <h1><%= title %></h1>
+    <span class="count"><%= tweets.length %> tweets</span>
+    <button id="deleteBtn" class="btn btn-danger" disabled>Supprimer la sélection</button>
+  </header>
+
+  <main>
+    <% if (tweets.length === 0) { %>
+      <div class="empty">Aucun tweet pour le moment. Lance un scraping d'abord.</div>
+    <% } else { %>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Compte</th>
+              <th>Texte</th>
+              <th>Date</th>
+              <th>Liens</th>
+              <th><input type="checkbox" id="selectAll" /></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% tweets.forEach(function(t) { %>
+              <tr>
+                <td class="account">@<%= t.account %></td>
+                <td class="text"><%= (t.text || '').substring(0, 120) %><% if (t.text && t.text.length > 120) { %>...<% } %></td>
+                <td class="date"><%= t.date ? new Date(t.date).toLocaleDateString('fr-FR') : '-' %></td>
+                <td class="links">
+                  <% if (t.links && t.links.length > 0) { %>
+                    <a href="<%= t.links[0] %>" target="_blank" class="btn-link">Voir</a>
+                  <% } else { %>
+                    -
+                  <% } %>
+                </td>
+                <td><input type="checkbox" class="tweet-check" data-id="<%= t.id %>" /></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </main>
+
+  <script>
+    var checkboxes = document.querySelectorAll('.tweet-check');
+    var selectAll = document.getElementById('selectAll');
+    var deleteBtn = document.getElementById('deleteBtn');
+
+    function updateDeleteBtn() {
+      var checked = document.querySelectorAll('.tweet-check:checked');
+      deleteBtn.disabled = checked.length === 0;
+      deleteBtn.textContent = 'Supprimer (' + checked.length + ')';
+    }
+
+    checkboxes.forEach(function(cb) {
+      cb.addEventListener('change', updateDeleteBtn);
+    });
+
+    if (selectAll) {
+      selectAll.addEventListener('change', function() {
+        checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+        updateDeleteBtn();
+      });
+    }
+
+    deleteBtn.addEventListener('click', function() {
+      var checked = document.querySelectorAll('.tweet-check:checked');
+      var ids = Array.from(checked).map(function(cb) { return cb.getAttribute('data-id'); });
+
+      if (ids.length === 0) return;
+
+      fetch('/bo/api/tweets/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ids })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          location.reload();
+        } else {
+          alert('Erreur : ' + data.error);
+        }
+      })
+      .catch(function(err) {
+        alert('Erreur réseau : ' + err.message);
+      });
+    });
+  </script>
+</body>
+</html>

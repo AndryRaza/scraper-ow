@@ -211,20 +211,20 @@ class TwitterScraper {
               if (link && !links.includes(link)) links.push(link);
             });
 
-            let retweets = null;
-            const retweetBtn = article.querySelector('button[data-testid="retweet"]');
-            if (retweetBtn) {
-              const label = retweetBtn.getAttribute('aria-label');
-              if (label) {
-                const match =
-                  label.match(/([\d\s,.]+)\s+reposts?/i) ||
-                  label.match(/([\d\s,.]+)/);
-                if (match) {
-                  const raw = match[1].replace(/\s|,/g, '');
-                  retweets = parseInt(raw, 10);
-                }
-              }
-            }
+            // let retweets = null;
+            // const retweetBtn = article.querySelector('button[data-testid="retweet"]');
+            // if (retweetBtn) {
+            //   const label = retweetBtn.getAttribute('aria-label');
+            //   if (label) {
+            //     const match =
+            //       label.match(/([\d\s,.]+)\s+reposts?/i) ||
+            //       label.match(/([\d\s,.]+)/);
+            //     if (match) {
+            //       const raw = match[1].replace(/\s|,/g, '');
+            //       retweets = parseInt(raw, 10);
+            //     }
+            //   }
+            // }
 
             results.push({
               id: `${acc}_${tweetId}`,
@@ -233,8 +233,8 @@ class TwitterScraper {
               date,
               tweetUrl,
               links,
-              retweets,
-              scrapedAt: new Date().toISOString(),
+              //retweets,
+              //scrapedAt: new Date().toISOString(),
             });
           } catch (err) {
             // Ignorer

@@ -53,4 +53,16 @@ function getTweets(account) {
   return db.tweets;
 }
 
-module.exports = { addTweets, getTweets };
+/**
+ * Supprime les tweets par IDs
+ */
+function deleteTweets(ids) {
+  const db = readDb();
+  const idsSet = new Set(ids);
+  const before = db.tweets.length;
+  db.tweets = db.tweets.filter((t) => !idsSet.has(t.id));
+  writeDb(db);
+  return { deleted: before - db.tweets.length, remaining: db.tweets.length };
+}
+
+module.exports = { addTweets, getTweets, deleteTweets };
