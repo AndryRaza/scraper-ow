@@ -29,14 +29,15 @@ router.get('/tweets', (req, res) => {
 /**
  * POST /api/scrape
  * Déclenche le scraping.
+ * Un navigateur visible s'ouvrira pour maintenir la session.
  * Body JSON optionnel:
  *   {
  *     "account": "elonmusk",  // si omis, scrape tous les comptes de la config
- *     "maxTweets": 30         // défaut 50
+ *     "maxTweets": 30         // défaut 10
  *   }
  */
 router.post('/scrape', async (req, res) => {
-  const { account, maxTweets = 50 } = req.body || {};
+  const { account, maxTweets = 10 } = req.body || {};
   const targets = account ? [account] : accounts;
 
   if (!targets || targets.length === 0) {
@@ -51,7 +52,9 @@ router.post('/scrape', async (req, res) => {
   const results = [];
 
   try {
-    await scraper.init(false); // headless: false pour le login manuel la 1ère fois
+    // Toujours navigateur visible (headless: false) et mode connecté (guest: false)
+    // car Twitter/X bloque les sessions headless.
+    await scraper.init(false, false);
     await scraper.ensureLoggedIn();
 
     for (const acc of targets) {

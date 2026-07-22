@@ -18,8 +18,15 @@ function saveCookies(cookies) {
   fs.writeFileSync(COOKIES_PATH, JSON.stringify(cookies, null, 2));
 }
 
+function clearCookies() {
+  if (fs.existsSync(COOKIES_PATH)) {
+    fs.unlinkSync(COOKIES_PATH);
+  }
+}
+
 module.exports = {
   loadCookies,
   saveCookies,
+  clearCookies,
   COOKIES_PATH,
 };

@@ -27,3 +27,4 @@ logs/
 *.trace.zip
 playwright-traces/
 screenshots/
+debug-blocked-*.png
