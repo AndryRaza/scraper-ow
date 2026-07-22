@@ -1,2 +1,29 @@
 /node_modules
 package-lock.json
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Scraper data & sessions
+cookies/
+data/
+*.db
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Playwright traces & screenshots (can contain session cookies or private data)
+*.trace.zip
+playwright-traces/
+screenshots/
