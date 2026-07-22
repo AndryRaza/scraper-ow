@@ -114,6 +114,15 @@ tbody td {
   cursor: not-allowed;
 }
 
+.btn-primary {
+  background: #2b66d9;
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1f4fa8;
+}
+
 .btn-danger {
   background: #e74c3c;
   color: #fff;

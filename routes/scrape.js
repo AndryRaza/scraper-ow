@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const TwitterScraper = require('../src/scraper/twitter-scraper');
 const { addTweets, getTweets } = require('../src/storage/db');
+const cancelState = require('../src/scraper/cancel-state');
 const accounts = require('../src/config/accounts');
 const logger = require('../src/utils/logger');
 
@@ -52,12 +53,13 @@ router.post('/scrape', async (req, res) => {
   const results = [];
 
   try {
-    // Toujours navigateur visible (headless: false) et mode connecté (guest: false)
-    // car Twitter/X bloque les sessions headless.
+    cancelState.reset();
+
     await scraper.init(false, false);
     await scraper.ensureLoggedIn();
 
     for (const acc of targets) {
+      cancelState.throwIfCancelled('Scraping annulé avant le prochain compte.');
       const tweets = await scraper.scrapeAccount(acc, parseInt(maxTweets, 10));
       const { added, total } = addTweets(tweets);
       results.push({
@@ -70,11 +72,26 @@ router.post('/scrape', async (req, res) => {
 
     res.json({ success: true, results });
   } catch (err) {
-    logger.error(err.message);
-    res.status(500).json({ success: false, error: err.message });
+    if (err.name === 'CancelError') {
+      logger.info('Scraping annulé par l\'utilisateur.');
+      res.json({ success: false, cancelled: true, results });
+    } else {
+      logger.error(err.message);
+      res.status(500).json({ success: false, error: err.message });
+    }
   } finally {
     await scraper.close();
   }
+});
+
+/**
+ * POST /api/scrape/cancel
+ * Demande l'annulation du scraping en cours.
+ */
+router.post('/scrape/cancel', (req, res) => {
+  cancelState.cancel();
+  logger.info('Annulation du scraping demandée.');
+  res.json({ success: true, message: 'Annulation demandée.' });
 });
 
 module.exports = router;

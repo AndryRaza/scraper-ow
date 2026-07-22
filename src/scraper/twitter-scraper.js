@@ -1,6 +1,7 @@
 const { chromium } = require('@playwright/test');
 const readline = require('readline');
 const { loadCookies, saveCookies, clearCookies } = require('./auth-helper');
+const cancelState = require('./cancel-state');
 const logger = require('../utils/logger');
 
 class TwitterScraper {
@@ -148,6 +149,7 @@ class TwitterScraper {
 
     await this.page.goto(`https://x.com/${account}`, { waitUntil: 'domcontentloaded' });
     await this.sleep(5000 + Math.floor(Math.random() * 3000));
+    cancelState.throwIfCancelled('Scraping annulé pendant le chargement.');
 
     await this.dismissGuestPopups();
 
@@ -172,6 +174,7 @@ class TwitterScraper {
     const maxNoNew = 5;
 
     while (tweets.length < maxTweets && noNewTweetCount < maxNoNew) {
+      cancelState.throwIfCancelled('Scraping annulé pendant la récolte.');
       const currentCount = tweets.length;
 
       if (this.guestMode) {
