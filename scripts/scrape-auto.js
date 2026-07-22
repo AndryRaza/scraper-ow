@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const TwitterScraper = require('../src/scraper/twitter-scraper');
 const { addTweets } = require('../src/storage/db');
-const accounts = require('../src/config/accounts');
+const accountsDb = require('../src/storage/accounts-db');
 const logger = require('../src/utils/logger');
 
 const COOKIES_PATH = path.join(__dirname, '../cookies/twitter-cookies.json');
@@ -14,8 +14,11 @@ const COOKIES_PATH = path.join(__dirname, '../cookies/twitter-cookies.json');
  * Échoue proprement si les cookies sont absents ou expirés.
  */
 async function main() {
-  if (accounts.length === 0) {
-    logger.error('Aucun compte configuré. Éditez src/config/accounts.js');
+  var accounts = accountsDb.list().filter(function (a) { return a.enabled; });
+  var handles = accounts.map(function (a) { return a.handle; });
+
+  if (handles.length === 0) {
+    logger.error('Aucun compte actif. Activez des comptes depuis le dashboard.');
     process.exit(1);
   }
 
@@ -33,10 +36,10 @@ async function main() {
     // autoMode: true = pas de prompt interactif, échec si cookies invalides
     await scraper.ensureLoggedIn(true);
 
-    for (const account of accounts) {
-      const tweets = await scraper.scrapeAccount(account, 10);
+    for (const handle of handles) {
+      const tweets = await scraper.scrapeAccount(handle, 10);
       const { added, total } = addTweets(tweets);
-      logger.info(`@${account}: ${added} nouveaux tweets (total DB: ${total})`);
+      logger.info(`@${handle}: ${added} nouveaux tweets (total DB: ${total})`);
     }
 
     logger.info('Scraping automatique terminé.');

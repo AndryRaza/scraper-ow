@@ -28,3 +28,8 @@ logs/
 playwright-traces/
 screenshots/
 debug-blocked-*.png
+
+#IA
+openspec
+.kimi
+.opencode

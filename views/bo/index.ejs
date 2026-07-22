@@ -18,6 +18,26 @@
     <button id="deleteBtn" class="btn btn-danger" disabled>Supprimer la s&eacute;lection</button>
   </header>
 
+  <section class="accounts-section">
+    <h2>Comptes surveill&eacute;s</h2>
+    <div class="accounts-list">
+      <% accounts.forEach(function(acc) { %>
+        <span class="account-tag" data-account="<%= acc.handle %>">
+          <label class="toggle-switch">
+            <input type="checkbox" class="toggle-check" data-account="<%= acc.handle %>" <%= acc.enabled ? 'checked' : '' %>>
+            <span class="toggle-slider"></span>
+          </label>
+          @<%= acc.handle %>
+          <button class="remove-account-btn" data-account="<%= acc.handle %>" title="Supprimer définitivement">&times;</button>
+        </span>
+      <% }); %>
+    </div>
+    <form id="addAccountForm" class="add-account-form">
+      <input type="text" id="addAccountInput" placeholder="@elonmusk" required>
+      <button type="submit" class="btn btn-primary btn-sm">Ajouter</button>
+    </form>
+  </section>
+
   <main>
     <% if (tweets.length === 0) { %>
       <div class="empty">Aucun tweet pour le moment. Lance un scraping d'abord.</div>
@@ -167,6 +187,120 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    .accounts-section {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+
+    .accounts-section h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #555;
+    }
+
+    .accounts-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .account-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #e8ebf0;
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .remove-account-btn {
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .remove-account-btn:hover {
+      color: #e74c3c;
+    }
+
+    .add-account-form {
+      display: flex;
+      gap: 8px;
+    }
+
+    .add-account-form input {
+      flex: 1;
+      max-width: 240px;
+      padding: 6px 12px;
+      border: 1px solid #c0c5d0;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 13px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 32px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch .toggle-check {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #c0c5d0;
+      border-radius: 18px;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle-check:checked + .toggle-slider {
+      background: #2b66d9;
+    }
+
+    .toggle-check:checked + .toggle-slider::before {
+      transform: translateX(14px);
+    }
+
+    .account-tag.disabled {
+      opacity: 0.5;
+    }
   </style>
 
   <script>
@@ -263,6 +397,92 @@
         cancelScrapeBtn.disabled = false;
         cancelScrapeBtn.textContent = 'Annuler';
       });
+    });
+
+    /* Gestion des comptes */
+    const addAccountForm = document.getElementById('addAccountForm');
+    const addAccountInput = document.getElementById('addAccountInput');
+
+    addAccountForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var account = addAccountInput.value.trim();
+
+      fetch('/api/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account: account })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          addAccountInput.value = '';
+          location.reload();
+        } else {
+          alert('Erreur : ' + data.error);
+        }
+      })
+      .catch(function(err) {
+        alert('Erreur réseau : ' + err.message);
+      });
+    });
+
+    /* Toggle enable/disable */
+    document.querySelectorAll('.toggle-check').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var account = this.getAttribute('data-account');
+        var enabled = this.checked;
+
+        fetch('/api/accounts/' + encodeURIComponent(account), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: enabled })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (!data.success) {
+            alert('Erreur : ' + data.error);
+          }
+          location.reload();
+        })
+        .catch(function(err) {
+          alert('Erreur réseau : ' + err.message);
+          location.reload();
+        });
+      });
+    });
+
+    /* Suppression définitive */
+    document.querySelectorAll('.remove-account-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (!confirm('Supprimer définitivement ce compte ?')) return;
+        var account = this.getAttribute('data-account');
+
+        fetch('/api/accounts/' + encodeURIComponent(account), {
+          method: 'DELETE'
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.success) {
+            location.reload();
+          } else {
+            alert('Erreur : ' + data.error);
+          }
+        })
+        .catch(function(err) {
+          alert('Erreur réseau : ' + err.message);
+        });
+      });
+    });
+
+    /* Ajout du style disabled sur les comptes inactifs */
+    document.querySelectorAll('.toggle-check').forEach(function(cb) {
+      var tag = cb.closest('.account-tag');
+      if (tag) {
+        if (!cb.checked) tag.classList.add('disabled');
+        cb.addEventListener('change', function() {
+          tag.classList.toggle('disabled', !this.checked);
+        });
+      }
     });
   </script>
 </body>

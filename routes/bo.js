@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var { getTweets, deleteTweets } = require('../src/storage/db');
+var accountsDb = require('../src/storage/accounts-db');
 
 router.get('/', function(req, res) {
   var tweets = getTweets();
@@ -35,6 +36,7 @@ router.get('/', function(req, res) {
 
   res.render('bo/index.ejs', {
     tweets: pageTweets,
+    accounts: accountsDb.list(),
     sortBy: sortBy,
     sortOrder: sortOrder,
     nextOrder: nextOrder,

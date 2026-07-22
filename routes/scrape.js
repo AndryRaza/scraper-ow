@@ -3,7 +3,7 @@ const router = express.Router();
 const TwitterScraper = require('../src/scraper/twitter-scraper');
 const { addTweets, getTweets } = require('../src/storage/db');
 const cancelState = require('../src/scraper/cancel-state');
-const accounts = require('../src/config/accounts');
+const accountsDb = require('../src/storage/accounts-db');
 const logger = require('../src/utils/logger');
 
 /**
@@ -39,13 +39,20 @@ router.get('/tweets', (req, res) => {
  */
 router.post('/scrape', async (req, res) => {
   const { account, maxTweets = 10 } = req.body || {};
-  const targets = account ? [account] : accounts;
+  var targets;
+  if (account) {
+    targets = [account];
+  } else {
+    targets = accountsDb.list()
+      .filter(function (a) { return a.enabled; })
+      .map(function (a) { return a.handle; });
+  }
 
   if (!targets || targets.length === 0) {
     return res.status(400).json({
       success: false,
       error:
-        'Aucun compte cible. Ajoutez des comptes dans src/config/accounts.js ou passez "account" dans le body.',
+        'Aucun compte cible. Ajoutez des comptes depuis le dashboard ou passez "account" dans le body.',
     });
   }
 
@@ -137,6 +144,83 @@ router.get('/tweets/list', (req, res) => {
       account: account,
       tweets: paged,
     });
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/accounts
+ * Liste les comptes configurés.
+ */
+router.get('/accounts', (req, res) => {
+  try {
+    var accounts = accountsDb.list();
+    res.json({ success: true, accounts: accounts });
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/accounts
+ * Ajoute un compte à la liste.
+ * Body: { "account": "elonmusk" }
+ */
+router.post('/accounts', (req, res) => {
+  var account = req.body && req.body.account;
+  if (!account) {
+    return res.status(400).json({ success: false, error: 'Le champ "account" est requis.' });
+  }
+  try {
+    var result = accountsDb.add(account);
+    if (result.added) {
+      res.json({ success: true, accounts: result.accounts });
+    } else {
+      res.status(409).json({ success: false, error: result.error });
+    }
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * DELETE /api/accounts/:account
+ * Supprime un compte de la liste.
+ */
+router.delete('/accounts/:account', (req, res) => {
+  var account = req.params.account;
+  try {
+    var result = accountsDb.remove(account);
+    if (result.removed) {
+      res.json({ success: true, accounts: result.accounts });
+    } else {
+      res.status(404).json({ success: false, error: result.error });
+    }
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * PATCH /api/accounts/:account
+ * Met à jour les propriétés d'un compte (ex: enabled).
+ * Body: { "enabled": true }
+ */
+router.patch('/accounts/:account', (req, res) => {
+  var account = req.params.account;
+  var changes = req.body || {};
+  try {
+    var result = accountsDb.update(account, changes);
+    if (result.updated) {
+      res.json({ success: true, accounts: result.accounts });
+    } else {
+      res.status(404).json({ success: false, error: result.error });
+    }
   } catch (err) {
     logger.error(err.message);
     res.status(500).json({ success: false, error: err.message });
